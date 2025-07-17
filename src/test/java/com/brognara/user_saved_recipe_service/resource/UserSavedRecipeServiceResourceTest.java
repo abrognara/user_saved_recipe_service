@@ -1,11 +1,9 @@
-package com.brognara.user_saved_recipe_service;
+package com.brognara.user_saved_recipe_service.resource;
 
 import com.brognara.user_saved_recipe_service.model.UserRecipeFolder;
 import com.brognara.user_saved_recipe_service.model.UserSavedRecipe;
-import com.brognara.user_saved_recipe_service.resource.UserSavedRecipeServiceResource;
 import com.brognara.user_saved_recipe_service.service.UserSavedRecipeService;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -13,7 +11,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-import java.util.Collections;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -21,6 +18,7 @@ import static org.mockito.BDDMockito.given;
 
 @WebFluxTest(UserSavedRecipeServiceResource.class)
 public class UserSavedRecipeServiceResourceTest {
+
     @Autowired
     private WebTestClient webTestClient;
 

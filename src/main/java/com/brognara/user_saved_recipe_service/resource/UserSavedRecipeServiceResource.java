@@ -2,7 +2,7 @@ package com.brognara.user_saved_recipe_service.resource;
 
 import com.brognara.user_saved_recipe_service.model.UserRecipeFolder;
 import com.brognara.user_saved_recipe_service.model.UserSavedRecipe;
-import com.brognara.user_saved_recipe_service.service.LocalUserSavedRecipeService;
+import com.brognara.user_saved_recipe_service.service.UserSavedRecipeService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -18,15 +18,15 @@ import java.util.concurrent.ConcurrentSkipListSet;
 @RequestMapping("/api/recipes")
 public class UserSavedRecipeServiceResource {
 
-    private final LocalUserSavedRecipeService userSavedRecipeService;
+    private final UserSavedRecipeService userSavedRecipeService;
 
     @Autowired
-    public UserSavedRecipeServiceResource(LocalUserSavedRecipeService userSavedRecipeService) {
+    public UserSavedRecipeServiceResource(UserSavedRecipeService userSavedRecipeService) {
         this.userSavedRecipeService = userSavedRecipeService;
     }
 
     @PostMapping(value = "/folders", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<ResponseEntity<String>> createFolder(@RequestBody UserRecipeFolder folder) {
+    public Mono<ResponseEntity<String>> createFolder(@RequestBody final UserRecipeFolder folder) {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] POST /folders - folder: {}", requestId, folder);
         return userSavedRecipeService.createNewFolderForUser("user-123", folder)
