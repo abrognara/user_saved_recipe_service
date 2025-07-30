@@ -5,6 +5,7 @@ import com.brognara.user_saved_recipe_service.model.UserSavedRecipe;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -64,4 +65,8 @@ public class LocalUserSavedRecipeService implements UserSavedRecipeService {
         return Mono.just("Success");
     }
 
+    public Mono<List<UserSavedRecipe>> getSavedRecipesFromFolder(final String userId, final String folderName) {
+        final UserRecipeFolder folder = getUserFolderOrThrow(userId, folderName);
+        return Mono.just(folder.getSavedRecipes());
+    }
 }
