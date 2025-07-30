@@ -12,13 +12,13 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
 @WebFluxTest(UserSavedRecipeServiceResource.class)
 public class UserSavedRecipeServiceResourceTest {
-
     @Autowired
     private WebTestClient webTestClient;
 
@@ -29,7 +29,7 @@ public class UserSavedRecipeServiceResourceTest {
     void testCreateFolder() {
         UserRecipeFolder folder = UserRecipeFolder.builder().folderName("Breakfast").createdByUser("user-123").creationTimestamp(1L).build();
         given(userSavedRecipeService.createNewFolderForUser(anyString(), any(UserRecipeFolder.class))).willReturn(Mono.just("Breakfast"));
-        webTestClient.post().uri("/api/recipes/folders")
+        webTestClient.post().uri("/api/v1/lists/")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(folder)
                 .exchange()
@@ -42,7 +42,7 @@ public class UserSavedRecipeServiceResourceTest {
         ConcurrentSkipListSet<UserRecipeFolder> folders = new ConcurrentSkipListSet<>();
         folders.add(UserRecipeFolder.builder().folderName("Breakfast").createdByUser("user-123").creationTimestamp(1L).build());
         given(userSavedRecipeService.getFoldersForUser(anyString())).willReturn(Mono.just(folders));
-        webTestClient.get().uri("/api/recipes/folders")
+        webTestClient.get().uri("/api/v1/lists/")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBodyList(UserRecipeFolder.class);
@@ -52,7 +52,7 @@ public class UserSavedRecipeServiceResourceTest {
     void testAddRecipeToFolder() {
         UserSavedRecipe recipe = new UserSavedRecipe("Pasta");
         given(userSavedRecipeService.addRecipeToFolderForUser(anyString(), anyString(), any(UserSavedRecipe.class))).willReturn(Mono.just("Success"));
-        webTestClient.post().uri("/api/recipes/folders/Lunch/recipes")
+        webTestClient.post().uri("/api/v1/lists/Lunch/saved")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(recipe)
                 .exchange()
@@ -63,7 +63,7 @@ public class UserSavedRecipeServiceResourceTest {
     @Test
     void testDeleteRecipeFromFolder() {
         given(userSavedRecipeService.deleteRecipeFromFolderForUser(anyString(), anyString(), anyString())).willReturn(Mono.just("Success"));
-        webTestClient.delete().uri("/api/recipes/folders/Lunch/recipes/Pasta")
+        webTestClient.delete().uri("/api/v1/lists/Lunch/saved/Pasta")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(String.class).isEqualTo("Success");
@@ -72,9 +72,23 @@ public class UserSavedRecipeServiceResourceTest {
     @Test
     void testDeleteFolder() {
         given(userSavedRecipeService.deleteFolderForUser(anyString(), anyString())).willReturn(Mono.just("Success"));
-        webTestClient.delete().uri("/api/recipes/folders/Lunch")
+        webTestClient.delete().uri("/api/v1/lists/Lunch")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(String.class).isEqualTo("Success");
+    }
+
+    @Test
+    void testGetSavedRecipesFromFolder() {
+        List<UserSavedRecipe> recipes = List.of(
+            new UserSavedRecipe("Pasta Carbonara"),
+            new UserSavedRecipe("Tiramisu")
+        );
+        given(userSavedRecipeService.getSavedRecipesFromFolder(anyString(), anyString())).willReturn(Mono.just(recipes));
+        webTestClient.get().uri("/api/v1/lists/Italian Food/saved")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBodyList(UserSavedRecipe.class)
+                .hasSize(2);
     }
 } 
