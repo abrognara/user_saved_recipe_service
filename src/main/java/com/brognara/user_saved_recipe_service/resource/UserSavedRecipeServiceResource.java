@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 @Log4j2
 @RestController
-@RequestMapping("/api/v1/lists")
+@RequestMapping("/api/v1")
 public class UserSavedRecipeServiceResource {
 
     private final UserSavedRecipeService userSavedRecipeService;
@@ -26,57 +26,81 @@ public class UserSavedRecipeServiceResource {
         this.userSavedRecipeService = userSavedRecipeService;
     }
 
-    @PostMapping(value = "/", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<ResponseEntity<String>> createFolder(@RequestBody final UserRecipeFolder folder) {
+    @PostMapping(value = "/lists", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ResponseEntity<String>> createFolder(
+            @RequestBody final UserRecipeFolder folder,
+            @RequestHeader("X-User-Id") final String userId,
+            @RequestHeader("X-User-Roles") final String userRoles
+    ) {
         final String requestId = UUID.randomUUID().toString();
-        log.info("[{}] POST /api/v1/lists - folder: {}", requestId, folder);
-        return userSavedRecipeService.createNewFolderForUser("user-123", folder)
+        log.info("[{}] POST /api/v1/lists ; folder={} ; userId={} ; userRoles={}",
+                requestId, folder, userId, userRoles);
+        return userSavedRecipeService.createNewFolderForUser(userId, folder)
                 .map(ResponseEntity::ok);
     }
 
-    @GetMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<ResponseEntity<ConcurrentSkipListSet<UserRecipeFolder>>> getFolders() {
+    @GetMapping(value = "/lists", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ResponseEntity<ConcurrentSkipListSet<UserRecipeFolder>>> getFolders(
+            @RequestHeader("X-User-Id") final String userId,
+            @RequestHeader("X-User-Roles") final String userRoles
+    ) {
         final String requestId = UUID.randomUUID().toString();
-        log.info("[{}] GET /api/v1/lists", requestId);
-        return userSavedRecipeService.getFoldersForUser("user-123")
+        log.info("[{}] GET /api/v1/lists ; userId={} ; userRoles={}", requestId, userId, userRoles);
+        return userSavedRecipeService.getFoldersForUser(userId)
                 .map(ResponseEntity::ok);
     }
 
-    @PostMapping(value = "/{listName}/saved", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/lists/{listName}/saved", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> addRecipeToFolder(
             @PathVariable String listName,
-            @RequestBody UserSavedRecipe recipe) {
+            @RequestBody UserSavedRecipe recipe,
+            @RequestHeader("X-User-Id") final String userId,
+            @RequestHeader("X-User-Roles") final String userRoles
+    ) {
         final String requestId = UUID.randomUUID().toString();
-        log.info("[{}] POST /api/v1/lists/{}/saved - recipe: {}", requestId, listName, recipe);
-        return userSavedRecipeService.addRecipeToFolderForUser("user-123", listName, recipe)
+        log.info("[{}] POST /api/v1/lists/{}/saved ; recipe: {} ; userId={} ; userRoles={}",
+                requestId, listName, recipe, userId, userRoles);
+        return userSavedRecipeService.addRecipeToFolderForUser(userId, listName, recipe)
                 .map(ResponseEntity::ok);
     }
 
-    @DeleteMapping(value = "/{listName}/saved/{recipeName}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @DeleteMapping(value = "/lists/{listName}/saved/{recipeName}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> deleteRecipeFromFolder(
             @PathVariable String listName,
-            @PathVariable String recipeName) {
+            @PathVariable String recipeName,
+            @RequestHeader("X-User-Id") final String userId,
+            @RequestHeader("X-User-Roles") final String userRoles
+    ) {
         final String requestId = UUID.randomUUID().toString();
-        log.info("[{}] DELETE /api/v1/lists/{}/saved/{}", requestId, listName, recipeName);
-        return userSavedRecipeService.deleteRecipeFromFolderForUser("user-123", listName, recipeName)
+        log.info("[{}] DELETE /api/v1/lists/{}/saved/{} ; userId={} ; userRoles={}",
+                requestId, listName, recipeName, userId, userRoles);
+        return userSavedRecipeService.deleteRecipeFromFolderForUser(userId, listName, recipeName)
                 .map(ResponseEntity::ok);
     }
 
-    @DeleteMapping(value = "/{listName}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @DeleteMapping(value = "/lists/{listName}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> deleteFolder(
-            @PathVariable String listName) {
+            @PathVariable final String listName,
+            @RequestHeader("X-User-Id") final String userId,
+            @RequestHeader("X-User-Roles") final String userRoles
+    ) {
         final String requestId = UUID.randomUUID().toString();
-        log.info("[{}] DELETE /api/v1/lists/{}", requestId, listName);
-        return userSavedRecipeService.deleteFolderForUser("user-123", listName)
+        log.info("[{}] DELETE /api/v1/lists/{} ; userId={} ; userRoles={}",
+                requestId, listName, userId, userRoles);
+        return userSavedRecipeService.deleteFolderForUser(userId, listName)
                 .map(ResponseEntity::ok);
     }
 
-    @GetMapping(value = "/{listName}/saved", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/lists/{listName}/saved", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<List<UserSavedRecipe>>> getSavedRecipesFromFolder(
-            @PathVariable String listName) {
+            @PathVariable String listName,
+            @RequestHeader("X-User-Id") final String userId,
+            @RequestHeader("X-User-Roles") final String userRoles
+    ) {
         final String requestId = UUID.randomUUID().toString();
-        log.info("[{}] GET /api/v1/lists/{}/saved", requestId, listName);
-        return userSavedRecipeService.getSavedRecipesFromFolder("user-123", listName)
+        log.info("[{}] GET /api/v1/lists/{}/saved ; userId={} ; userRoles={}",
+                requestId, listName, userId, userRoles);
+        return userSavedRecipeService.getSavedRecipesFromFolder(userId, listName)
                 .map(ResponseEntity::ok);
     }
 }
