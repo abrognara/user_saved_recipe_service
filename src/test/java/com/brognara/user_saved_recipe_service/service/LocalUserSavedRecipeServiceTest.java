@@ -21,9 +21,9 @@ public class LocalUserSavedRecipeServiceTest {
     @Test
     void testCreateAndGetFolder() {
         UserRecipeFolder folder = UserRecipeFolder.builder().folderName("Breakfast").createdByUser(userId).creationTimestamp(System.currentTimeMillis()).build();
-        String result = service.createNewFolderForUser(userId, folder).block();
+        String result = service.createNewListForUser(userId, folder).block();
         assertEquals("Breakfast", result);
-        ConcurrentSkipListSet<UserRecipeFolder> folders = service.getFoldersForUser(userId).block();
+        ConcurrentSkipListSet<UserRecipeFolder> folders = service.getListsForUser(userId).block();
         assertNotNull(folders);
         assertEquals(1, folders.size());
         assertEquals("Breakfast", folders.first().getFolderName());
@@ -32,11 +32,11 @@ public class LocalUserSavedRecipeServiceTest {
     @Test
     void testAddRecipeToFolder() {
         UserRecipeFolder folder = UserRecipeFolder.builder().folderName("Lunch").createdByUser(userId).creationTimestamp(System.currentTimeMillis()).build();
-        service.createNewFolderForUser(userId, folder).block();
+        service.createNewListForUser(userId, folder).block();
         UserSavedRecipe recipe = new UserSavedRecipe("Pasta");
-        String result = service.addRecipeToFolderForUser(userId, "Lunch", recipe).block();
+        String result = service.addRecipeToListForUser(userId, "Lunch", recipe).block();
         assertEquals("Success", result);
-        ConcurrentSkipListSet<UserRecipeFolder> folders = service.getFoldersForUser(userId).block();
+        ConcurrentSkipListSet<UserRecipeFolder> folders = service.getListsForUser(userId).block();
         assertEquals(1, folders.size());
         UserRecipeFolder lunchFolder = folders.first();
         assertEquals(1, lunchFolder.getSavedRecipes().size());
@@ -46,22 +46,22 @@ public class LocalUserSavedRecipeServiceTest {
     @Test
     void testDeleteRecipeFromFolder() {
         UserRecipeFolder folder = UserRecipeFolder.builder().folderName("Dinner").createdByUser(userId).creationTimestamp(System.currentTimeMillis()).build();
-        service.createNewFolderForUser(userId, folder).block();
+        service.createNewListForUser(userId, folder).block();
         UserSavedRecipe recipe = new UserSavedRecipe("Steak");
-        service.addRecipeToFolderForUser(userId, "Dinner", recipe).block();
-        String result = service.deleteRecipeFromFolderForUser(userId, "Dinner", "Steak").block();
+        service.addRecipeToListForUser(userId, "Dinner", recipe).block();
+        String result = service.deleteRecipeFromListForUser(userId, "Dinner", "Steak").block();
         assertEquals("Success", result);
-        UserRecipeFolder dinnerFolder = service.getFoldersForUser(userId).block().first();
+        UserRecipeFolder dinnerFolder = service.getListsForUser(userId).block().first();
         assertEquals(0, dinnerFolder.getSavedRecipes().size());
     }
 
     @Test
-    void testDeleteFolderForUser() {
+    void testDeleteListForUser() {
         UserRecipeFolder folder = UserRecipeFolder.builder().folderName("Snacks").createdByUser(userId).creationTimestamp(System.currentTimeMillis()).build();
-        service.createNewFolderForUser(userId, folder).block();
-        String result = service.deleteFolderForUser(userId, "Snacks").block();
+        service.createNewListForUser(userId, folder).block();
+        String result = service.deleteListForUser(userId, "Snacks").block();
         assertEquals("Success", result);
-        ConcurrentSkipListSet<UserRecipeFolder> folders = service.getFoldersForUser(userId).block();
+        ConcurrentSkipListSet<UserRecipeFolder> folders = service.getListsForUser(userId).block();
         assertNotNull(folders);
         assertEquals(0, folders.size());
     }
@@ -69,14 +69,14 @@ public class LocalUserSavedRecipeServiceTest {
     @Test
     void testDuplicateFolderThrows() {
         UserRecipeFolder folder = UserRecipeFolder.builder().folderName("Dessert").createdByUser(userId).creationTimestamp(System.currentTimeMillis()).build();
-        service.createNewFolderForUser(userId, folder).block();
-        assertThrows(RuntimeException.class, () -> service.createNewFolderForUser(userId, folder).block());
+        service.createNewListForUser(userId, folder).block();
+        assertThrows(RuntimeException.class, () -> service.createNewListForUser(userId, folder).block());
     }
 
     @Test
     void testDeleteNonexistentRecipeThrows() {
         UserRecipeFolder folder = UserRecipeFolder.builder().folderName("Brunch").createdByUser(userId).creationTimestamp(System.currentTimeMillis()).build();
-        service.createNewFolderForUser(userId, folder).block();
-        assertThrows(RuntimeException.class, () -> service.deleteRecipeFromFolderForUser(userId, "Brunch", "Nonexistent").block());
+        service.createNewListForUser(userId, folder).block();
+        assertThrows(RuntimeException.class, () -> service.deleteRecipeFromListForUser(userId, "Brunch", "Nonexistent").block());
     }
 } 

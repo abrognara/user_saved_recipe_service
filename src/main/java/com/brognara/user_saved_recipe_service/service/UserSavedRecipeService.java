@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public interface UserSavedRecipeService {
-    Mono<String> createNewFolderForUser(String userId, UserRecipeFolder folder);
-    Mono<ConcurrentSkipListSet<UserRecipeFolder>> getFoldersForUser(String userId);
-    Mono<String> addRecipeToFolderForUser(String userId, String folderName, UserSavedRecipe recipe);
-    Mono<String> deleteRecipeFromFolderForUser(String userId, String folderName, String recipeName);
-    Mono<String> deleteFolderForUser(String userId, String folderName);
-    Mono<List<UserSavedRecipe>> getSavedRecipesFromFolder(String userId, String folderName);
+    Mono<String> createNewListForUser(String userId, UserRecipeFolder folder);
+    Mono<ConcurrentSkipListSet<UserRecipeFolder>> getListsForUser(String userId);
+    Mono<String> addRecipeToListForUser(String userId, String folderName, UserSavedRecipe recipe);
+    Mono<String> deleteRecipeFromListForUser(String userId, String folderName, String recipeName);
+    Mono<String> deleteListForUser(String userId, String folderName);
+    Mono<List<UserSavedRecipe>> getSavedRecipesFromList(String userId, String folderName);
 } 

@@ -28,7 +28,7 @@ public class UserSavedRecipeServiceResourceTest {
     @Test
     void testCreateFolder() {
         UserRecipeFolder folder = UserRecipeFolder.builder().folderName("Breakfast").createdByUser("user-123").creationTimestamp(1L).build();
-        given(userSavedRecipeService.createNewFolderForUser(anyString(), any(UserRecipeFolder.class))).willReturn(Mono.just("Breakfast"));
+        given(userSavedRecipeService.createNewListForUser(anyString(), any(UserRecipeFolder.class))).willReturn(Mono.just("Breakfast"));
         webTestClient.post().uri("/api/v1/lists/")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(folder)
@@ -41,7 +41,7 @@ public class UserSavedRecipeServiceResourceTest {
     void testGetFolders() {
         ConcurrentSkipListSet<UserRecipeFolder> folders = new ConcurrentSkipListSet<>();
         folders.add(UserRecipeFolder.builder().folderName("Breakfast").createdByUser("user-123").creationTimestamp(1L).build());
-        given(userSavedRecipeService.getFoldersForUser(anyString())).willReturn(Mono.just(folders));
+        given(userSavedRecipeService.getListsForUser(anyString())).willReturn(Mono.just(folders));
         webTestClient.get().uri("/api/v1/lists/")
                 .exchange()
                 .expectStatus().isOk()
@@ -51,7 +51,7 @@ public class UserSavedRecipeServiceResourceTest {
     @Test
     void testAddRecipeToFolder() {
         UserSavedRecipe recipe = new UserSavedRecipe("Pasta");
-        given(userSavedRecipeService.addRecipeToFolderForUser(anyString(), anyString(), any(UserSavedRecipe.class))).willReturn(Mono.just("Success"));
+        given(userSavedRecipeService.addRecipeToListForUser(anyString(), anyString(), any(UserSavedRecipe.class))).willReturn(Mono.just("Success"));
         webTestClient.post().uri("/api/v1/lists/Lunch/saved")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(recipe)
@@ -62,7 +62,7 @@ public class UserSavedRecipeServiceResourceTest {
 
     @Test
     void testDeleteRecipeFromFolder() {
-        given(userSavedRecipeService.deleteRecipeFromFolderForUser(anyString(), anyString(), anyString())).willReturn(Mono.just("Success"));
+        given(userSavedRecipeService.deleteRecipeFromListForUser(anyString(), anyString(), anyString())).willReturn(Mono.just("Success"));
         webTestClient.delete().uri("/api/v1/lists/Lunch/saved/Pasta")
                 .exchange()
                 .expectStatus().isOk()
@@ -71,7 +71,7 @@ public class UserSavedRecipeServiceResourceTest {
 
     @Test
     void testDeleteFolder() {
-        given(userSavedRecipeService.deleteFolderForUser(anyString(), anyString())).willReturn(Mono.just("Success"));
+        given(userSavedRecipeService.deleteListForUser(anyString(), anyString())).willReturn(Mono.just("Success"));
         webTestClient.delete().uri("/api/v1/lists/Lunch")
                 .exchange()
                 .expectStatus().isOk()
@@ -79,12 +79,12 @@ public class UserSavedRecipeServiceResourceTest {
     }
 
     @Test
-    void testGetSavedRecipesFromFolder() {
+    void testGetSavedRecipesFromList() {
         List<UserSavedRecipe> recipes = List.of(
             new UserSavedRecipe("Pasta Carbonara"),
             new UserSavedRecipe("Tiramisu")
         );
-        given(userSavedRecipeService.getSavedRecipesFromFolder(anyString(), anyString())).willReturn(Mono.just(recipes));
+        given(userSavedRecipeService.getSavedRecipesFromList(anyString(), anyString())).willReturn(Mono.just(recipes));
         webTestClient.get().uri("/api/v1/lists/Italian Food/saved")
                 .exchange()
                 .expectStatus().isOk()

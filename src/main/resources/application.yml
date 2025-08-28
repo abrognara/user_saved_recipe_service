@@ -1,0 +1,16 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: User Saved Recipe Service
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:5432/postgres?user=postgres.mzkiapwwiyeuqkqvsflv&password=
+    username: postgres.mzkiapwwiyeuqkqvsflv
+    password:
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl

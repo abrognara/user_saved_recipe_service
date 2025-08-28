@@ -35,7 +35,7 @@ public class UserSavedRecipeServiceResource {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] POST /api/v1/lists ; folder={} ; userId={} ; userRoles={}",
                 requestId, folder, userId, userRoles);
-        return userSavedRecipeService.createNewFolderForUser(userId, folder)
+        return userSavedRecipeService.createNewListForUser(userId, folder)
                 .map(ResponseEntity::ok);
     }
 
@@ -46,7 +46,7 @@ public class UserSavedRecipeServiceResource {
     ) {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] GET /api/v1/lists ; userId={} ; userRoles={}", requestId, userId, userRoles);
-        return userSavedRecipeService.getFoldersForUser(userId)
+        return userSavedRecipeService.getListsForUser(userId)
                 .map(ResponseEntity::ok);
     }
 
@@ -60,7 +60,7 @@ public class UserSavedRecipeServiceResource {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] POST /api/v1/lists/{}/saved ; recipe: {} ; userId={} ; userRoles={}",
                 requestId, listName, recipe, userId, userRoles);
-        return userSavedRecipeService.addRecipeToFolderForUser(userId, listName, recipe)
+        return userSavedRecipeService.addRecipeToListForUser(userId, listName, recipe)
                 .map(ResponseEntity::ok);
     }
 
@@ -74,7 +74,7 @@ public class UserSavedRecipeServiceResource {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] DELETE /api/v1/lists/{}/saved/{} ; userId={} ; userRoles={}",
                 requestId, listName, recipeName, userId, userRoles);
-        return userSavedRecipeService.deleteRecipeFromFolderForUser(userId, listName, recipeName)
+        return userSavedRecipeService.deleteRecipeFromListForUser(userId, listName, recipeName)
                 .map(ResponseEntity::ok);
     }
 
@@ -87,7 +87,7 @@ public class UserSavedRecipeServiceResource {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] DELETE /api/v1/lists/{} ; userId={} ; userRoles={}",
                 requestId, listName, userId, userRoles);
-        return userSavedRecipeService.deleteFolderForUser(userId, listName)
+        return userSavedRecipeService.deleteListForUser(userId, listName)
                 .map(ResponseEntity::ok);
     }
 
@@ -100,7 +100,7 @@ public class UserSavedRecipeServiceResource {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] GET /api/v1/lists/{}/saved ; userId={} ; userRoles={}",
                 requestId, listName, userId, userRoles);
-        return userSavedRecipeService.getSavedRecipesFromFolder(userId, listName)
+        return userSavedRecipeService.getSavedRecipesFromList(userId, listName)
                 .map(ResponseEntity::ok);
     }
 }

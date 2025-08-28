@@ -18,7 +18,7 @@ public class LocalUserSavedRecipeService implements UserSavedRecipeService {
     public ConcurrentMap<String, ConcurrentSkipListSet<UserRecipeFolder>> localSingleLevelUserRecipeLists =
             new ConcurrentHashMap<>();
 
-    public Mono<String> createNewFolderForUser(final String userId, final UserRecipeFolder folder) {
+    public Mono<String> createNewListForUser(final String userId, final UserRecipeFolder folder) {
         localSingleLevelUserRecipeLists.putIfAbsent(userId, new ConcurrentSkipListSet<>());
 
         final boolean addResult = localSingleLevelUserRecipeLists.get(userId).add(folder);
@@ -28,7 +28,7 @@ public class LocalUserSavedRecipeService implements UserSavedRecipeService {
         return Mono.just(folder.getFolderName());
     }
 
-    public Mono<ConcurrentSkipListSet<UserRecipeFolder>> getFoldersForUser(final String userId) {
+    public Mono<ConcurrentSkipListSet<UserRecipeFolder>> getListsForUser(final String userId) {
         localSingleLevelUserRecipeLists.putIfAbsent(userId, new ConcurrentSkipListSet<>());
 
         return Mono.just(localSingleLevelUserRecipeLists.get(userId));
@@ -43,14 +43,14 @@ public class LocalUserSavedRecipeService implements UserSavedRecipeService {
                 .orElseThrow(() -> new RuntimeException("Folder " + folderName + " does not exist for user " + userId));
     }
 
-    public Mono<String> addRecipeToFolderForUser(
+    public Mono<String> addRecipeToListForUser(
             final String userId, final String folderName, final UserSavedRecipe recipe) {
         final UserRecipeFolder folder = getUserFolderOrThrow(userId, folderName);
         folder.getSavedRecipes().add(recipe);
         return Mono.just("Success");
     }
 
-    public Mono<String> deleteRecipeFromFolderForUser(final String userId, final String folderName, final String recipeName) {
+    public Mono<String> deleteRecipeFromListForUser(final String userId, final String folderName, final String recipeName) {
         final UserRecipeFolder folder = getUserFolderOrThrow(userId, folderName);
         boolean removed = folder.getSavedRecipes().removeIf(r -> r.getRecipeName().equals(recipeName));
         if (!removed) {
@@ -59,13 +59,13 @@ public class LocalUserSavedRecipeService implements UserSavedRecipeService {
         return Mono.just("Success");
     }
 
-    public Mono<String> deleteFolderForUser(final String userId, final String folderName) {
+    public Mono<String> deleteListForUser(final String userId, final String folderName) {
         final UserRecipeFolder folder = getUserFolderOrThrow(userId, folderName);
         localSingleLevelUserRecipeLists.get(userId).remove(folder);
         return Mono.just("Success");
     }
 
-    public Mono<List<UserSavedRecipe>> getSavedRecipesFromFolder(final String userId, final String folderName) {
+    public Mono<List<UserSavedRecipe>> getSavedRecipesFromList(final String userId, final String folderName) {
         final UserRecipeFolder folder = getUserFolderOrThrow(userId, folderName);
         return Mono.just(folder.getSavedRecipes());
     }
