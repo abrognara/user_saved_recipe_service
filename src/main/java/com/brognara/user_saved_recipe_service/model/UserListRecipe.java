@@ -6,8 +6,10 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.util.Date;
-import java.util.UUID;
 
+@Getter
+@Setter
+@ToString
 @Entity
 @Table(name = "user_list_recipes")
 @IdClass(UserListRecipeId.class)
