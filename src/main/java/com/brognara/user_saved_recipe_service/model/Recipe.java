@@ -17,13 +17,16 @@ public class Recipe {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id")
     private UUID recipeId;
 
-    @Column(nullable = false)
+    @Column(name = "name", nullable = false)
     private String recipeName;
 
+    @Column(name = "source_url")
     private String sourceUrl;
 
+    @Column(name = "created_at")
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt = new Date();
 

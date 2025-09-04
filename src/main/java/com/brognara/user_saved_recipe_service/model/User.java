@@ -19,20 +19,23 @@ public class User {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;  // internal app ID
 
-    @Column(nullable = false)
+    @Column(name = "auth_provider", nullable = false)
     private String authProvider;
 
-    @Column(nullable = false)
+    @Column(name = "auth_provider_id", nullable = false)
     private String authProviderId;  // e.g. Firebase uid
 
-    @Column(unique = true)
+    @Column(name = "email", unique = true)
     private String email;
 
+    @Column(name = "display_name")
     private String displayName;
 
+    @Column(name = "created_at")
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt = new Date();
 
+    @Column(name = "last_login")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLogin;
 

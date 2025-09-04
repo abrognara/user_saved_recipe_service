@@ -25,6 +25,7 @@ public class UserListRecipe {
     @JoinColumn(name = "recipe_id", nullable = false)
     private Recipe recipe;
 
+    @Column(name = "added_at")
     @Temporal(TemporalType.TIMESTAMP)
     private Date addedAt = new Date();
 

@@ -19,7 +19,7 @@ import java.util.UUID;
 public class UserList {
 
     @Id
-    // col name is id?
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID listId;
 
@@ -33,6 +33,7 @@ public class UserList {
     @Column(name = "is_public")
     private Boolean isPublic = false;
 
+    @Column(name = "created_at")
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt = new Date();
 

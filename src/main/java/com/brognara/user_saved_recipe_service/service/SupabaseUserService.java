@@ -3,10 +3,12 @@ package com.brognara.user_saved_recipe_service.service;
 import com.brognara.user_saved_recipe_service.exception.UserNotFoundException;
 import com.brognara.user_saved_recipe_service.model.User;
 import com.brognara.user_saved_recipe_service.repository.UserRepository;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+@Service
 public class SupabaseUserService implements UserService {
 
     private final UserRepository userRepository;

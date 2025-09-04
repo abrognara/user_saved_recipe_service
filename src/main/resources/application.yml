@@ -5,9 +5,9 @@ spring:
     name: User Saved Recipe Service
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:5432/postgres?user=postgres.mzkiapwwiyeuqkqvsflv&password=5g@SbVhE8$iFV%4
+    url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:5432/postgres
     username: postgres.mzkiapwwiyeuqkqvsflv
-    password: 5g@SbVhE8$iFV%4
+    password:
   jpa:
     show-sql: true
     hibernate:
