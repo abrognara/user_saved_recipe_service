@@ -16,6 +16,7 @@ public class UserListDto implements Comparable<UserListDto> {
     private long creationTimestamp;
 
     // TODO recipe count if possible
+    // TODO add last updated timestamp
 
     @Override
     public int compareTo(UserListDto o) {

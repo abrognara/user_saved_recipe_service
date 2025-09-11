@@ -15,7 +15,8 @@ import reactor.core.scheduler.Schedulers;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Callable;
+
+import static com.brognara.user_saved_recipe_service.utils.PgReactiveUtils.wrapMono;
 
 @Service
 public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
@@ -26,18 +27,20 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
     private final UserListRecipeRepository userListRecipeRepository;
     private final RecipeRepository recipeRepository;
     private final UserService userService;
+    private final RecipeDeduplicationFilter recipeDeduplicationFilter;
 
     @Autowired
     public SupabaseUserSavedRecipeService(
             UserListRepository userListRepository,
             UserListRecipeRepository userListRecipeRepository,
             RecipeRepository recipeRepository,
-            final UserService userService
+            final UserService userService, final RecipeDeduplicationFilter recipeDeduplicationFilter
     ) {
         this.userListRepository = userListRepository;
         this.userListRecipeRepository = userListRecipeRepository;
         this.recipeRepository = recipeRepository;
         this.userService = userService;
+        this.recipeDeduplicationFilter = recipeDeduplicationFilter;
     }
 
     @Override
@@ -74,16 +77,11 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
                 );
     }
 
-    private <T> Mono<T> wrapMono(Callable<T> callable) {
-        return Mono.fromCallable(callable)
-                .subscribeOn(Schedulers.boundedElastic());
-    }
-
     // Load UserList + Recipe, create new UserListRecipe, save it.
-    // TODO If recipe names are not unique, use recipeId instead of recipeName for the lookup.
+    // TODO Does this do too many db operations?
     @Override
     @Transactional
-    public Mono<String> addRecipeToListForUser(String userId, String listName, RecipeDto recipe) {
+    public Mono<String> addRecipeToListForUser(final String userId, final String listName, final Recipe recipe) {
         return userService.getUserByAuthProviderAndId(FIREBASE, userId)
                 .flatMap(user ->
                     wrapMono(() -> {
@@ -91,9 +89,8 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
                                 .findByUserIdAndListName(user.getId(), listName)
                                 .orElseThrow(() -> new IllegalArgumentException("List not found"));
 
-                        Recipe r = recipeRepository
-                                .findByRecipeName(recipe.getRecipeName())
-                                .orElseThrow(() -> new IllegalArgumentException("Recipe not found"));
+                        // this will have the same content as 'recipe', except with normalized url
+                        final Recipe r = recipeDeduplicationFilter.saveRecipeIfNotExistsAndGet(recipe);
 
                         if (userListRecipeRepository.existsByUserListAndRecipe(userList, r)) {
                             throw new IllegalStateException("Recipe already exists in this list");
@@ -106,13 +103,14 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
 
                         userListRecipeRepository.save(userListRecipe);
 
-                        return recipe.getRecipeName();
+                        return recipe.getName();
                     })
                 );
     }
 
     @Override
-    public Mono<String> deleteRecipeFromListForUser(String userId, String listName, String recipeName) {
+    public Mono<String> deleteRecipeFromListForUser(final String userId,
+                                                    final String listName, final String recipeName) {
         return userService.getUserByAuthProviderAndId(FIREBASE, userId)
                 .flatMap(user ->
                     wrapMono(() -> {
@@ -127,7 +125,7 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
     }
 
     @Override
-    public Mono<String> deleteListForUser(String userId, String listName) {
+    public Mono<String> deleteListForUser(final String userId, final String listName) {
         return userService.getUserByAuthProviderAndId(FIREBASE, userId)
                 .flatMap(user ->
                     wrapMono(() -> {
@@ -141,7 +139,7 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
     }
 
     @Override
-    public Mono<List<Recipe>> getSavedRecipesFromList(String userId, String listName) {
+    public Mono<List<Recipe>> getSavedRecipesFromList(final String userId, final String listName) {
         return userService.getUserByAuthProviderAndId(FIREBASE, userId)
                 .flatMap(user ->
                     wrapMono(() ->

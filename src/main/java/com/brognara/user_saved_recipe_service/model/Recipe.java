@@ -5,29 +5,57 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
 @Setter
-@ToString
 @Entity
-@Table(name = "recipes")
+@ToString
+@Table(
+        name = "recipes",
+        uniqueConstraints = @UniqueConstraint(columnNames = "url")
+)
 public class Recipe {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id")
-    private UUID recipeId;
+    private UUID id;
 
-    @Column(name = "name", nullable = false)
-    private String recipeName;
+    @Column(nullable = false)
+    private String name;
 
-    @Column(name = "source_url")
-    private String sourceUrl;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-    @Column(name = "created_at")
+    @Column(nullable = false, unique = true)
+    private String url;
+
+    private String author;
+
+    private Double rating; // numeric(2,1) in db
+    private Integer numReviews;
+    private Integer prepTimeMins;
+    private Integer cookTimeMins;
+    private Short servings;
+
+    @ElementCollection
+    @CollectionTable(name = "recipe_instructions", joinColumns = @JoinColumn(name = "recipe_id"))
+    @Column(name = "step", columnDefinition = "TEXT")
+    private List<String> instructions = new ArrayList<>();
+
+    @Column(columnDefinition = "jsonb")
+    private String ingredients; // store raw JSON
+
+    @Column(columnDefinition = "jsonb")
+    private String nutrition;   // store raw JSON
+
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt = new Date();
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date updatedAt = new Date();
 
 }

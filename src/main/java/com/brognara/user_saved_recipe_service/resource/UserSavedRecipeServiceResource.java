@@ -57,24 +57,25 @@ public class UserSavedRecipeServiceResource {
                 .map(ResponseEntity::ok);
     }
 
-    @PostMapping(value = "/lists/{listName}/saved", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = "/lists/{listName}/saved", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> addRecipeToList(
-            @PathVariable String listName,
-            @RequestBody RecipeDto recipe,
+            @PathVariable final String listName,
+            @RequestBody final RecipeDto recipeDto,
             @RequestHeader("X-User-Id") final String userId,
             @RequestHeader("X-User-Roles") final String userRoles
     ) {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] POST /api/v1/lists/{}/saved ; recipe: {} ; userId={} ; userRoles={}",
-                requestId, listName, recipe, userId, userRoles);
-        return userSavedRecipeService.addRecipeToListForUser(userId, listName, recipe)
+                requestId, listName, recipeDto, userId, userRoles);
+        return dtoMappingService.toEntity(recipeDto)
+                .flatMap(recipe -> userSavedRecipeService.addRecipeToListForUser(userId, listName, recipe))
                 .map(ResponseEntity::ok);
     }
 
     @DeleteMapping(value = "/lists/{listName}/saved/{recipeName}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> deleteRecipeFromList(
-            @PathVariable String listName,
-            @PathVariable String recipeName,
+            @PathVariable final String listName,
+            @PathVariable final String recipeName,
             @RequestHeader("X-User-Id") final String userId,
             @RequestHeader("X-User-Roles") final String userRoles
     ) {
@@ -98,9 +99,10 @@ public class UserSavedRecipeServiceResource {
                 .map(ResponseEntity::ok);
     }
 
+    // TODO do we need to return all recipe data in a list, or just a summary?
     @GetMapping(value = "/lists/{listName}/saved", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<List<RecipeDto>>> getSavedRecipesFromList(
-            @PathVariable String listName,
+            @PathVariable final String listName,
             @RequestHeader("X-User-Id") final String userId,
             @RequestHeader("X-User-Roles") final String userRoles
     ) {
