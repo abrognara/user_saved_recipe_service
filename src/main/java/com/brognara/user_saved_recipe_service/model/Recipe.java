@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -36,26 +37,34 @@ public class Recipe {
     private String author;
 
     private Double rating; // numeric(2,1) in db
+
+    @Column(name = "num_reviews")
     private Integer numReviews;
+
+    @Column(name = "prep_time_mins")
     private Integer prepTimeMins;
+
+    @Column(name = "cook_time_mins")
     private Integer cookTimeMins;
+
     private Short servings;
 
-    @ElementCollection
-    @CollectionTable(name = "recipe_instructions", joinColumns = @JoinColumn(name = "recipe_id"))
-    @Column(name = "step", columnDefinition = "TEXT")
     private List<String> instructions = new ArrayList<>();
 
     @Column(columnDefinition = "jsonb")
+    @ColumnTransformer(write = "?::jsonb")
     private String ingredients; // store raw JSON
 
     @Column(columnDefinition = "jsonb")
+    @ColumnTransformer(write = "?::jsonb")
     private String nutrition;   // store raw JSON
 
     @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "created_at")
     private Date createdAt = new Date();
 
     @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "updated_at")
     private Date updatedAt = new Date();
 
 }

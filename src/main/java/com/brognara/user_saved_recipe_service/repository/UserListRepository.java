@@ -18,9 +18,11 @@ public interface UserListRepository extends JpaRepository<UserList, UUID> {
 
     Optional<UserList> findByUserIdAndListName(UUID userId, String listName);
 
+    Optional<UserList> findByUserIdAndId(UUID userId, UUID id);
+
     @Transactional
     @Modifying
-    @Query("DELETE FROM UserList ul WHERE ul.user.id = :userId AND ul.listName = :listName")
-    int deleteByUserIdAndListName(@Param("userId") UUID userId,
-                                  @Param("listName") String listName);
+    @Query("DELETE FROM UserList ul WHERE ul.user.id = :userId AND ul.id = :listId")
+    int deleteByUserIdAndListId(@Param("userId") UUID userId,
+                                @Param("listId") UUID listId);
 }

@@ -12,23 +12,24 @@ import java.util.UUID;
 
 public interface UserListRecipeRepository extends JpaRepository<UserListRecipe, UserListRecipeId> {
 
-    boolean existsByUserListAndRecipe(UserList userList, Recipe recipe);
+//    boolean existsByUserListAndRecipe(UserList userList, Recipe recipe);
+    // ID-based method avoids fetching extra entities & more performant
+    boolean existsByUserList_IdAndRecipe_Id(UUID listId, UUID recipeId);
 
     @Query("SELECT ulr.recipe " +
             "FROM UserListRecipe ulr " +
             "JOIN ulr.userList ul " +
             "WHERE ul.user.id = :userId " +
-            "AND ul.listName = :listName")
-    List<Recipe> findRecipesByUserIdAndListName(@Param("userId") UUID userId,
-                                                @Param("listName") String listName);
+            "AND ul.id = :listId")
+    List<Recipe> findRecipesByUserIdAndListId(@Param("userId") UUID userId,
+                                              @Param("listId") UUID listId);
 
     @Transactional
     @Modifying
     @Query("DELETE FROM UserListRecipe ulr " +
-            "WHERE ulr.userList.user.id = :userId " +
-            "AND ulr.userList.listName = :listName " +
-            "AND ulr.recipe.recipeName = :recipeName")
+            "WHERE ulr.userList.id = :listId " +
+            "AND ulr.recipe.id = :recipeId")
     int deleteRecipeFromList(@Param("userId") UUID userId,
-                             @Param("listName") String listName,
-                             @Param("recipeName") String recipeName);
+                             @Param("listId") UUID listId,
+                             @Param("recipeId") UUID recipeId);
 }

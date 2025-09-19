@@ -1,6 +1,5 @@
 package com.brognara.user_saved_recipe_service.service;
 
-import com.brognara.user_saved_recipe_service.dto.RecipeDto;
 import com.brognara.user_saved_recipe_service.dto.UserListDto;
 import com.brognara.user_saved_recipe_service.model.*;
 import com.brognara.user_saved_recipe_service.repository.RecipeRepository;
@@ -15,6 +14,7 @@ import reactor.core.scheduler.Schedulers;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.brognara.user_saved_recipe_service.utils.PgReactiveUtils.wrapMono;
 
@@ -49,11 +49,11 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
                 .flatMap(user -> createNewListIfNotExists(user, userListDto));
     }
 
-    private Mono<UserList> createNewListIfNotExists(final User user, final UserListDto folder) {
+    private Mono<UserList> createNewListIfNotExists(final User user, final UserListDto list) {
         return Mono.fromCallable(() -> {
-            Optional<UserList> userList = userListRepository.findByUserIdAndListName(user.getId(), folder.getListName());
+            Optional<UserList> userList = userListRepository.findByUserIdAndListName(user.getId(), list.getListName());
             if (userList.isPresent()) {
-                throw new IllegalArgumentException("List already exists for user: " + folder.getListName());
+                throw new IllegalArgumentException("List already exists for user: " + list.getListName());
             }
             return userList;
         })
@@ -61,7 +61,7 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
                         Mono.fromCallable(() -> {
                             UserList userList = new UserList();
                             userList.setUser(user);
-                            userList.setListName(folder.getListName());
+                            userList.setListName(list.getListName());
                             return userListRepository.save(userList);
                         }).subscribeOn(Schedulers.boundedElastic()))
                 .subscribeOn(Schedulers.boundedElastic());
@@ -81,22 +81,24 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
     // TODO Does this do too many db operations?
     @Override
     @Transactional
-    public Mono<String> addRecipeToListForUser(final String userId, final String listName, final Recipe recipe) {
+    public Mono<String> addRecipeToListForUser(final String userId, final String listId, final Recipe recipe) {
         return userService.getUserByAuthProviderAndId(FIREBASE, userId)
                 .flatMap(user ->
                     wrapMono(() -> {
+                        final UUID listIdUuid = UUID.fromString(listId);
                         UserList userList = userListRepository
-                                .findByUserIdAndListName(user.getId(), listName)
+                                .findByUserIdAndId(user.getId(), listIdUuid)
                                 .orElseThrow(() -> new IllegalArgumentException("List not found"));
 
                         // this will have the same content as 'recipe', except with normalized url
                         final Recipe r = recipeDeduplicationFilter.saveRecipeIfNotExistsAndGet(recipe);
 
-                        if (userListRecipeRepository.existsByUserListAndRecipe(userList, r)) {
+                        if (userListRecipeRepository.existsByUserList_IdAndRecipe_Id(userList.getId(), r.getId())) {
                             throw new IllegalStateException("Recipe already exists in this list");
                         }
 
                         UserListRecipe userListRecipe = new UserListRecipe();
+                        userListRecipe.setId(new UserListRecipeId(userList.getId(), r.getId()));
                         userListRecipe.setUserList(userList);
                         userListRecipe.setRecipe(r);
                         userListRecipe.setAddedAt(new Date());
@@ -110,41 +112,45 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
 
     @Override
     public Mono<String> deleteRecipeFromListForUser(final String userId,
-                                                    final String listName, final String recipeName) {
+                                                    final String listId, final String recipeId) {
         return userService.getUserByAuthProviderAndId(FIREBASE, userId)
                 .flatMap(user ->
                     wrapMono(() -> {
+                        final UUID listIdUuid = UUID.fromString(listId);
+                        final UUID recipeIdUuid = UUID.fromString(recipeId);
                         int deletedRows = userListRecipeRepository.deleteRecipeFromList(
-                                user.getId(), listName, recipeName);
+                                user.getId(), listIdUuid, recipeIdUuid);
                         if (deletedRows == 0) {
-                            throw new IllegalArgumentException("Recipe " + recipeName + " not found");
+                            throw new IllegalArgumentException("Recipe " + recipeId + " not found");
                         }
-                        return recipeName;
+                        return recipeId;
                     })
                 );
     }
 
     @Override
-    public Mono<String> deleteListForUser(final String userId, final String listName) {
+    public Mono<String> deleteListForUser(final String userId, final String listId) {
         return userService.getUserByAuthProviderAndId(FIREBASE, userId)
                 .flatMap(user ->
                     wrapMono(() -> {
-                        int deletedRows = userListRepository.deleteByUserIdAndListName(user.getId(), listName);
+                        final UUID listIdUuid = UUID.fromString(listId);
+                        int deletedRows = userListRepository.deleteByUserIdAndListId(user.getId(), listIdUuid);
                         if (deletedRows == 0) {
-                            throw new IllegalArgumentException("List " + listName + " not found");
+                            throw new IllegalArgumentException("List " + listId + " not found");
                         }
-                        return listName;
+                        return listId;
                     })
                 );
     }
 
     @Override
-    public Mono<List<Recipe>> getSavedRecipesFromList(final String userId, final String listName) {
+    public Mono<List<Recipe>> getSavedRecipesFromList(final String userId, final String listId) {
         return userService.getUserByAuthProviderAndId(FIREBASE, userId)
                 .flatMap(user ->
-                    wrapMono(() ->
-                            userListRecipeRepository.findRecipesByUserIdAndListName(user.getId(), listName)
-                    )
+                    wrapMono(() -> {
+                        final UUID listIdUuid = UUID.fromString(listId);
+                        return userListRecipeRepository.findRecipesByUserIdAndListId(user.getId(), listIdUuid);
+                    })
                 );
     }
 }

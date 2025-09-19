@@ -57,59 +57,64 @@ public class UserSavedRecipeServiceResource {
                 .map(ResponseEntity::ok);
     }
 
-    @PutMapping(value = "/lists/{listName}/saved", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    // add recipe to user list
+    // 1) check if recipe already exists (url hash)
+    // --> if yes, return recipe id, name, some other metadata
+    // --> if no, create recipe, return recipe id, name, some other metadata
+    // 2) add recipe id + metadata to user list
+    @PutMapping(value = "/lists/{listId}/saved", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> addRecipeToList(
-            @PathVariable final String listName,
+            @PathVariable final String listId,
             @RequestBody final RecipeDto recipeDto,
             @RequestHeader("X-User-Id") final String userId,
             @RequestHeader("X-User-Roles") final String userRoles
     ) {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] POST /api/v1/lists/{}/saved ; recipe: {} ; userId={} ; userRoles={}",
-                requestId, listName, recipeDto, userId, userRoles);
+                requestId, listId, recipeDto, userId, userRoles);
         return dtoMappingService.toEntity(recipeDto)
-                .flatMap(recipe -> userSavedRecipeService.addRecipeToListForUser(userId, listName, recipe))
+                .flatMap(recipe -> userSavedRecipeService.addRecipeToListForUser(userId, listId, recipe))
                 .map(ResponseEntity::ok);
     }
 
-    @DeleteMapping(value = "/lists/{listName}/saved/{recipeName}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @DeleteMapping(value = "/lists/{listId}/saved/{recipeId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> deleteRecipeFromList(
-            @PathVariable final String listName,
-            @PathVariable final String recipeName,
+            @PathVariable final String listId,
+            @PathVariable final String recipeId,
             @RequestHeader("X-User-Id") final String userId,
             @RequestHeader("X-User-Roles") final String userRoles
     ) {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] DELETE /api/v1/lists/{}/saved/{} ; userId={} ; userRoles={}",
-                requestId, listName, recipeName, userId, userRoles);
-        return userSavedRecipeService.deleteRecipeFromListForUser(userId, listName, recipeName)
+                requestId, listId, recipeId, userId, userRoles);
+        return userSavedRecipeService.deleteRecipeFromListForUser(userId, listId, recipeId)
                 .map(ResponseEntity::ok);
     }
 
-    @DeleteMapping(value = "/lists/{listName}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @DeleteMapping(value = "/lists/{listId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> deleteList(
-            @PathVariable final String listName,
+            @PathVariable final String listId,
             @RequestHeader("X-User-Id") final String userId,
             @RequestHeader("X-User-Roles") final String userRoles
     ) {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] DELETE /api/v1/lists/{} ; userId={} ; userRoles={}",
-                requestId, listName, userId, userRoles);
-        return userSavedRecipeService.deleteListForUser(userId, listName)
+                requestId, listId, userId, userRoles);
+        return userSavedRecipeService.deleteListForUser(userId, listId)
                 .map(ResponseEntity::ok);
     }
 
     // TODO do we need to return all recipe data in a list, or just a summary?
-    @GetMapping(value = "/lists/{listName}/saved", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/lists/{listId}/saved", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<List<RecipeDto>>> getSavedRecipesFromList(
-            @PathVariable final String listName,
+            @PathVariable final String listId,
             @RequestHeader("X-User-Id") final String userId,
             @RequestHeader("X-User-Roles") final String userRoles
     ) {
         final String requestId = UUID.randomUUID().toString();
         log.info("[{}] GET /api/v1/lists/{}/saved ; userId={} ; userRoles={}",
-                requestId, listName, userId, userRoles);
-        return userSavedRecipeService.getSavedRecipesFromList(userId, listName)
+                requestId, listId, userId, userRoles);
+        return userSavedRecipeService.getSavedRecipesFromList(userId, listId)
                 .flatMap(dtoMappingService::toListOfRecipeDto)
                 .map(ResponseEntity::ok);
     }

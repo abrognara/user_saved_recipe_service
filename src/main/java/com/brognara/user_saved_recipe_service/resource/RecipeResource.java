@@ -27,12 +27,6 @@ public class RecipeResource {
         this.dtoMappingService = dtoMappingService;
     }
 
-    // add recipe to user list
-    // 1) check if recipe already exists (url hash)
-    // --> if yes, return recipe id, name, some other metadata
-    // --> if no, create recipe, return recipe id, name, some other metadata
-    // 2) add recipe id + metadata to user list
-
     @GetMapping(value = "/recipes/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<RecipeDto>> getRecipeById(
             @RequestHeader("X-User-Id") final String userId,

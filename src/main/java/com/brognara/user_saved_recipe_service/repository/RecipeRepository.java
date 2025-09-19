@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public interface RecipeRepository extends JpaRepository<Recipe, UUID> {
 
-    Optional<Recipe> findByRecipeName(String recipeName);
+    Optional<Recipe> findByName(String name);
     Optional<Recipe> findByUrl(String url);
 
 }

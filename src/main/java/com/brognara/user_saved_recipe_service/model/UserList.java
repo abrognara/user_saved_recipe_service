@@ -19,9 +19,8 @@ import java.util.UUID;
 public class UserList {
 
     @Id
-    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID listId;
+    private UUID id;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
