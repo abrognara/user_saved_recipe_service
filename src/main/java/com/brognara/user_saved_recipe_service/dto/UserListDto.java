@@ -1,5 +1,7 @@
 package com.brognara.user_saved_recipe_service.dto;
 
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,6 +12,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UserListDto implements Comparable<UserListDto> {
+    @Pattern(regexp = "^[a-zA-Z0-9 _\\-]+$",
+             message = "List name may only contain letters, numbers, spaces, hyphens, and underscores")
+    @Size(min = 1, max = 100, message = "List name must be between 1 and 100 characters")
     private String listName;
     private String createdByUser;
     private boolean isPublic;

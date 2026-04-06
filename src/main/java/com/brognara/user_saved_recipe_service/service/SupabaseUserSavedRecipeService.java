@@ -6,6 +6,7 @@ import com.brognara.user_saved_recipe_service.repository.RecipeRepository;
 import com.brognara.user_saved_recipe_service.repository.UserListRecipeRepository;
 import com.brognara.user_saved_recipe_service.repository.UserListRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -19,6 +20,7 @@ import java.util.UUID;
 import static com.brognara.user_saved_recipe_service.utils.PgReactiveUtils.wrapMono;
 
 @Service
+@Profile("!dynamo")
 public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
 
     private static final String FIREBASE = "firebase";

@@ -5,9 +5,15 @@ spring:
     name: User Saved Recipe Service
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:5432/postgres
-    username: postgres.mzkiapwwiyeuqkqvsflv
-    password: # TODO reset pwd
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}?ssl=true&sslmode=require
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   jpa:
     show-sql: true
     hibernate:

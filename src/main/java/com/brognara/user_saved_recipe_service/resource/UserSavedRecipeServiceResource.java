@@ -5,9 +5,11 @@ import com.brognara.user_saved_recipe_service.dto.RecipeDto;
 import com.brognara.user_saved_recipe_service.service.DtoMappingService;
 import com.brognara.user_saved_recipe_service.service.UserSavedRecipeService;
 import lombok.extern.log4j.Log4j2;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -15,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Log4j2
+@Validated
 @RestController
 @RequestMapping("/api/v1")
 public class UserSavedRecipeServiceResource {
@@ -33,7 +36,7 @@ public class UserSavedRecipeServiceResource {
 
     @PostMapping(value = "/lists", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> createList(
-            @RequestBody final UserListDto userListDto,
+            @Valid @RequestBody final UserListDto userListDto,
             @RequestHeader("X-User-Id") final String userId,
             @RequestHeader("X-User-Roles") final String userRoles
     ) {
