@@ -10,6 +10,5 @@ dynamo:
   region: ${DYNAMO_REGION:us-east-1}
   endpoint: ${DYNAMO_ENDPOINT:}
   table:
-    users: ${DYNAMO_USERS_TABLE:users}
-    recipes: ${DYNAMO_RECIPES_TABLE:recipes}
-    user-lists: ${DYNAMO_USER_LISTS_TABLE:user_lists}
+    recipes: ${DYNAMO_RECIPES_TABLE:Recipes}
+    user-lists: ${DYNAMO_USER_LISTS_TABLE:UserSavedRecipes}

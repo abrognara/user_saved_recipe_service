@@ -1,5 +1,77 @@
 # User Saved Recipe Service
 
+## Running Locally with DynamoDB
+
+### Prerequisites
+- Docker
+- AWS CLI (`brew install awscli`)
+
+### 1. Start DynamoDB Local
+
+```bash
+docker compose up -d
+```
+
+### 2. Create tables
+
+```bash
+AWS_ACCESS_KEY_ID=local AWS_SECRET_ACCESS_KEY=local ./scripts/setup-local-dynamo.sh
+```
+
+### 3. Run the service
+
+```bash
+AWS_ACCESS_KEY_ID=local AWS_SECRET_ACCESS_KEY=local \
+  SPRING_PROFILES_ACTIVE=dynamo,local \
+  mvn spring-boot:run
+
+> DynamoDB Local runs on port **8001** (port 8000 is commonly used by other local services).
+```
+
+The service will be available at http://localhost:8081
+
+### Example requests
+
+All endpoints require `X-User-Id` (a UUID) and `X-User-Roles` headers.
+
+```bash
+# Create a list — response is the list name; use GET /lists to retrieve the listId UUID
+curl -X POST http://localhost:8081/api/v1/lists \
+  -H "Content-Type: application/json" \
+  -H "X-User-Id: 00000000-0000-0000-0000-000000000001" \
+  -H "X-User-Roles: user" \
+  -d '{"listName": "Italian Food", "isPublic": false}'
+
+# Get all lists — each list includes its listId UUID
+curl http://localhost:8081/api/v1/lists \
+  -H "X-User-Id: 00000000-0000-0000-0000-000000000001" \
+  -H "X-User-Roles: user"
+
+# Add a recipe to a list — {listId} is the UUID from the list response
+curl -X PUT "http://localhost:8081/api/v1/lists/{listId}/saved" \
+  -H "Content-Type: application/json" \
+  -H "X-User-Id: 00000000-0000-0000-0000-000000000001" \
+  -H "X-User-Roles: user" \
+  -d '{"url": "https://example.com/pasta-carbonara", "title": "Pasta Carbonara"}'
+
+# Get saved recipes in a list
+curl "http://localhost:8081/api/v1/lists/{listId}/saved" \
+  -H "X-User-Id: 00000000-0000-0000-0000-000000000001" \
+  -H "X-User-Roles: user"
+
+# Delete a recipe from a list
+curl -X DELETE "http://localhost:8081/api/v1/lists/{listId}/saved/{recipeId}" \
+  -H "X-User-Id: 00000000-0000-0000-0000-000000000001" \
+  -H "X-User-Roles: user"
+
+# Delete a list
+curl -X DELETE "http://localhost:8081/api/v1/lists/{listId}" \
+  -H "X-User-Id: 00000000-0000-0000-0000-000000000001" \
+  -H "X-User-Roles: user"
+```
+
+---
+
 ## Docker
 
 ### Build the Docker image
@@ -16,151 +88,128 @@ docker run -p 8081:8081 user-saved-recipe-service
 
 The service will be available at http://localhost:8081
 
+---
+
 ## API Specifications
 
 ### Base URL
 ```
-http://localhost:8081/api/recipes
+http://localhost:8081/api/v1
 ```
 
-### Endpoints
+### Authentication
 
-#### 1. Create Folder
-**POST** `/folders`
+All endpoints require the following headers set by the upstream gateway:
 
-Creates a new recipe folder for the user.
+| Header | Description |
+|---|---|
+| `X-User-Id` | Internal user UUID |
+| `X-User-Roles` | User roles (e.g. `user`) |
 
-**Request Body:**
+### User List Endpoints
+
+#### Create a list
+**POST** `/lists`
+
+**Request body:**
 ```json
 {
-  "folderName": "Breakfast",
-  "createdByUser": "user-123",
-  "creationTimestamp": 1703123456789
+  "listName": "Italian Food",
+  "isPublic": false
 }
 ```
 
-**Response:**
-```json
-"Breakfast"
-```
+`listName` must match `^[a-zA-Z0-9 _\-]+$`, max 100 characters. Names are unique per user (case-insensitive).
 
-#### 2. Get All Folders
-**GET** `/folders`
+**Response:** the list name as a string.
 
-Retrieves all recipe folders for the user.
+---
+
+#### Get all lists for the user
+**GET** `/lists`
 
 **Response:**
 ```json
 [
   {
-    "folderName": "Breakfast",
-    "createdByUser": "user-123",
-    "creationTimestamp": 1703123456789,
-    "savedRecipes": []
-  },
-  {
-    "folderName": "Lunch",
-    "createdByUser": "user-123",
-    "creationTimestamp": 1703123456790,
-    "savedRecipes": [
-      {
-        "recipeName": "Pasta Carbonara"
-      }
-    ]
+    "listId": "a1b2c3d4-...",
+    "listName": "Italian Food",
+    "createdByUser": "Jane",
+    "isPublic": false,
+    "creationTimestamp": 1703123456789
   }
 ]
 ```
 
-#### 3. Add Recipe to Folder
-**POST** `/folders/{folderName}/recipes`
+`listId` is the UUID to use in all subsequent requests for this list.
 
-Adds a recipe to a specific folder.
+---
 
-**Path Parameters:**
-- `folderName` (string): Name of the folder
+#### Add a recipe to a list
+**PUT** `/lists/{listId}/saved`
 
-**Request Body:**
+Saves a recipe to the list. If the recipe URL has been seen before (normalized, case-insensitive), the existing recipe record is reused rather than creating a duplicate.
+
+**Request body:**
 ```json
 {
-  "recipeName": "Pasta Carbonara"
+  "url": "https://example.com/pasta-carbonara",
+  "title": "Pasta Carbonara",
+  "description": "A classic Roman pasta dish.",
+  "author": "Marcella Hazan",
+  "prep_time": "15 minutes",
+  "cook_time": "20 minutes",
+  "total_time": "35 minutes",
+  "servings": "4",
+  "rating_average": 4.8,
+  "rating_count": 312,
+  "keywords": ["pasta", "italian", "quick"],
+  "ingredient_groups": [
+    {
+      "group_name": null,
+      "ingredients": ["200g spaghetti", "100g guanciale", "2 eggs"]
+    }
+  ],
+  "instruction_groups": [
+    {
+      "group_name": null,
+      "steps": ["Boil pasta.", "Fry guanciale.", "Mix eggs with cheese."]
+    }
+  ],
+  "notes": "Use Pecorino Romano for best results."
 }
 ```
 
-**Response:**
-```json
-"Success"
-```
+**Response:** the recipe name as a string.
 
-#### 4. Delete Recipe from Folder
-**DELETE** `/folders/{folderName}/recipes/{recipeName}`
+---
 
-Removes a recipe from a specific folder.
+#### Get saved recipes in a list
+**GET** `/lists/{listId}/saved`
 
-**Path Parameters:**
-- `folderName` (string): Name of the folder
-- `recipeName` (string): Name of the recipe to delete
+**Response:** array of recipe objects (same shape as the add recipe request body, plus `id`).
 
-**Response:**
-```json
-"Success"
-```
+---
 
-#### 5. Delete Folder
-**DELETE** `/folders/{folderName}`
+#### Delete a recipe from a list
+**DELETE** `/lists/{listId}/saved/{recipeId}`
 
-Deletes a folder and all its recipes.
+**Response:** the deleted `recipeId` as a string.
 
-**Path Parameters:**
-- `folderName` (string): Name of the folder to delete
+---
 
-**Response:**
-```json
-"Success"
-```
+#### Delete a list
+**DELETE** `/lists/{listId}`
+
+**Response:** the deleted `listId` as a string.
+
+---
 
 ### Error Responses
 
-All endpoints may return the following error responses:
-
-**400 Bad Request** - Invalid request format
-**404 Not Found** - Folder or recipe not found
-**409 Conflict** - Folder already exists
-**500 Internal Server Error** - Server error
-
-### Example Usage
-
-#### Create a folder and add recipes:
-
-```bash
-# Create a folder
-curl -X POST http://localhost:8081/api/recipes/folders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "folderName": "Italian Food",
-    "createdByUser": "user-123",
-    "creationTimestamp": 1703123456789
-  }'
-
-# Add a recipe to the folder
-curl -X POST http://localhost:8081/api/recipes/folders/Italian%20Food/recipes \
-  -H "Content-Type: application/json" \
-  -d '{
-    "recipeName": "Pasta Carbonara"
-  }'
-
-# Get all folders
-curl -X GET http://localhost:8081/api/recipes/folders
-
-# Delete a recipe
-curl -X DELETE http://localhost:8081/api/recipes/folders/Italian%20Food/recipes/Pasta%20Carbonara
-
-# Delete the folder
-curl -X DELETE http://localhost:8081/api/recipes/folders/Italian%20Food
-```
-
-### Notes
-
-- All endpoints use the mock user ID "user-123"
-- Folder names are case-sensitive
-- Recipe names are case-sensitive
-- The service uses in-memory storage (data is lost on restart) 
+| Status | Meaning |
+|---|---|
+| 400 | Invalid request body or list name format |
+| 404 | List or recipe not found |
+| 409 | List with that name already exists for this user |
+| 500 | Server error |

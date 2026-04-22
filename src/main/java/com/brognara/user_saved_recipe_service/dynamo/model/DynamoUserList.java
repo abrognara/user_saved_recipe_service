@@ -4,26 +4,32 @@ import com.brognara.user_saved_recipe_service.model.User;
 import com.brognara.user_saved_recipe_service.model.UserList;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 import java.util.Date;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * DynamoDB model for user lists.
  *
  * Table key:
- *   PK: userId (internal UUID string)
- *   SK: listName (the natural unique key per user)
+ *   PK: userId  (internal UUID string)
+ *   SK: listId  (UUID — unique identity for the list, enables sharing)
  *
- * recipeIds is a StringSet of recipe UUIDs embedded directly on this item,
- * eliminating the need for a separate join table.
+ * GSI:
+ *   listIdIndex — PK: listId  (allows resolving any list by UUID for sharing lookups)
+ *
+ * listName is a regular attribute; uniqueness per user is enforced in the service layer.
+ * recipeIds is a StringSet of recipe UUIDs embedded directly on this item.
  * Note: DynamoDB does not allow empty sets — recipeIds is absent until the first recipe is added.
  */
 @DynamoDbBean
 public class DynamoUserList {
 
     private String userId;
+    private String listId;
     private String listName;
     private Boolean isPublic;
     private Long createdAt;
@@ -34,6 +40,10 @@ public class DynamoUserList {
     public void setUserId(String userId) { this.userId = userId; }
 
     @DynamoDbSortKey
+    @DynamoDbSecondaryPartitionKey(indexNames = {"listIdIndex"})
+    public String getListId() { return listId; }
+    public void setListId(String listId) { this.listId = listId; }
+
     public String getListName() { return listName; }
     public void setListName(String listName) { this.listName = listName; }
 
@@ -46,21 +56,26 @@ public class DynamoUserList {
     public Set<String> getRecipeIds() { return recipeIds; }
     public void setRecipeIds(Set<String> recipeIds) { this.recipeIds = recipeIds; }
 
-    public UserList toUserList(User user) {
+    public UserList toUserList() {
+        User stubUser = new User();
+        stubUser.setId(UUID.fromString(userId));
+
         UserList ul = new UserList();
-        ul.setUser(user);
+        ul.setId(UUID.fromString(listId));
+        ul.setUser(stubUser);
         ul.setListName(listName);
         ul.setIsPublic(isPublic != null ? isPublic : false);
         ul.setCreatedAt(createdAt != null ? new Date(createdAt) : new Date());
         return ul;
     }
 
-    public static DynamoUserList from(UserList userList) {
+    public static DynamoUserList from(String userId, String listName, boolean isPublic) {
         DynamoUserList dul = new DynamoUserList();
-        dul.setUserId(userList.getUser().getId().toString());
-        dul.setListName(userList.getListName());
-        dul.setIsPublic(userList.getIsPublic());
-        dul.setCreatedAt(userList.getCreatedAt() != null ? userList.getCreatedAt().getTime() : System.currentTimeMillis());
+        dul.setUserId(userId);
+        dul.setListId(UUID.randomUUID().toString());
+        dul.setListName(listName);
+        dul.setIsPublic(isPublic);
+        dul.setCreatedAt(System.currentTimeMillis());
         // recipeIds intentionally omitted — DynamoDB does not allow empty sets
         return dul;
     }

@@ -57,7 +57,10 @@ public class UserSavedRecipeServiceResource {
         log.info("[{}] GET /api/v1/lists ; userId={} ; userRoles={}", requestId, userId, userRoles);
         return userSavedRecipeService.getListsForUser(userId)
                 .flatMap(dtoMappingService::toListOfUserListDto)
-                .map(ResponseEntity::ok);
+                .map(ResponseEntity::ok)
+                .doOnError(e -> {
+                    log.error("[{}] Get lists failed: ", requestId, e);
+                });
     }
 
     // add recipe to user list

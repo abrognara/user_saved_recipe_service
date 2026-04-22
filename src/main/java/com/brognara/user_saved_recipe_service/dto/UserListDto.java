@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UserListDto implements Comparable<UserListDto> {
+    private String listId;
     @Pattern(regexp = "^[a-zA-Z0-9 _\\-]+$",
              message = "List name may only contain letters, numbers, spaces, hyphens, and underscores")
     @Size(min = 1, max = 100, message = "List name must be between 1 and 100 characters")

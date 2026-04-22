@@ -20,19 +20,14 @@ import static com.brognara.user_saved_recipe_service.utils.PgReactiveUtils.wrapM
 @Profile("dynamo")
 public class DynamoUserSavedRecipeService implements UserSavedRecipeService {
 
-    private static final String FIREBASE = "firebase";
-
-    private final UserService userService;
     private final DynamoUserListRepository userListRepository;
     private final DynamoRecipeRepository recipeRepository;
     private final DynamoRecipeDeduplicationFilter recipeDeduplicationFilter;
 
     public DynamoUserSavedRecipeService(
-            UserService userService,
             DynamoUserListRepository userListRepository,
             DynamoRecipeRepository recipeRepository,
             DynamoRecipeDeduplicationFilter recipeDeduplicationFilter) {
-        this.userService = userService;
         this.userListRepository = userListRepository;
         this.recipeRepository = recipeRepository;
         this.recipeDeduplicationFilter = recipeDeduplicationFilter;
@@ -40,111 +35,90 @@ public class DynamoUserSavedRecipeService implements UserSavedRecipeService {
 
     @Override
     public Mono<UserList> createNewListForUser(final String userId, final UserListDto userListDto) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
-                .flatMap(user -> wrapMono(() -> {
-                    String internalUserId = user.getId().toString();
-                    String listName = userListDto.getListName();
-
-                    if (userListRepository.findByUserIdAndListName(internalUserId, listName).isPresent()) {
-                        throw new IllegalArgumentException("List already exists for user: " + listName);
-                    }
-
-                    UserList userList = new UserList();
-                    userList.setUser(user);
-                    userList.setListName(listName);
-                    userList.setIsPublic(false);
-
-                    DynamoUserList saved = userListRepository.save(DynamoUserList.from(userList));
-                    return saved.toUserList(user);
-                }));
+        return wrapMono(() -> {
+            String listName = userListDto.getListName();
+            boolean nameExists = userListRepository.findByUserId(userId).stream()
+                    .anyMatch(l -> listName.equalsIgnoreCase(l.getListName()));
+            if (nameExists) {
+                throw new IllegalArgumentException("List already exists for user: " + listName);
+            }
+            DynamoUserList saved = userListRepository.save(DynamoUserList.from(userId, listName, false));
+            return saved.toUserList();
+        });
     }
 
     @Override
     public Mono<List<UserList>> getListsForUser(final String userId) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
-                .flatMap(user -> wrapMono(() -> {
-                    String internalUserId = user.getId().toString();
-                    return userListRepository.findByUserId(internalUserId).stream()
-                            .map(dul -> dul.toUserList(user))
-                            .toList();
-                }));
+        return wrapMono(() ->
+                userListRepository.findByUserId(userId).stream()
+                        .map(DynamoUserList::toUserList)
+                        .toList()
+        );
     }
 
-    // listName is passed as the "listId" path variable for the dynamo profile
     @Override
-    public Mono<String> addRecipeToListForUser(final String userId, final String listName, final Recipe recipe) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
-                .flatMap(user -> wrapMono(() -> {
-                    String internalUserId = user.getId().toString();
-                    DynamoUserList userList = userListRepository
-                            .findByUserIdAndListName(internalUserId, listName)
-                            .orElseThrow(() -> new IllegalArgumentException("List not found: " + listName));
+    public Mono<String> addRecipeToListForUser(final String userId, final String listId, final Recipe recipe) {
+        return wrapMono(() -> {
+            DynamoUserList userList = userListRepository
+                    .findByUserIdAndListId(userId, listId)
+                    .orElseThrow(() -> new IllegalArgumentException("List not found: " + listId));
 
-                    Recipe deduped = recipeDeduplicationFilter.saveRecipeIfNotExistsAndGet(recipe);
-                    String recipeId = deduped.getId().toString();
+            Recipe deduped = recipeDeduplicationFilter.saveRecipeIfNotExistsAndGet(recipe);
+            String recipeId = deduped.getId().toString();
 
-                    Set<String> existing = userList.getRecipeIds();
-                    if (existing != null && existing.contains(recipeId)) {
-                        throw new IllegalStateException("Recipe already exists in this list");
-                    }
+            Set<String> existing = userList.getRecipeIds();
+            if (existing != null && existing.contains(recipeId)) {
+                throw new IllegalStateException("Recipe already exists in this list");
+            }
 
-                    userListRepository.addRecipeId(internalUserId, listName, recipeId);
-                    return recipe.getName();
-                }));
+            userListRepository.addRecipeId(userId, listId, recipeId);
+            return recipe.getName();
+        });
     }
 
-    // listName is passed as the "listId" path variable for the dynamo profile
     @Override
-    public Mono<String> deleteRecipeFromListForUser(final String userId, final String listName, final String recipeId) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
-                .flatMap(user -> wrapMono(() -> {
-                    String internalUserId = user.getId().toString();
-                    DynamoUserList userList = userListRepository
-                            .findByUserIdAndListName(internalUserId, listName)
-                            .orElseThrow(() -> new IllegalArgumentException("List not found: " + listName));
+    public Mono<String> deleteRecipeFromListForUser(final String userId, final String listId, final String recipeId) {
+        return wrapMono(() -> {
+            DynamoUserList userList = userListRepository
+                    .findByUserIdAndListId(userId, listId)
+                    .orElseThrow(() -> new IllegalArgumentException("List not found: " + listId));
 
-                    Set<String> existing = userList.getRecipeIds();
-                    if (existing == null || !existing.contains(recipeId)) {
-                        throw new IllegalArgumentException("Recipe " + recipeId + " not found in list");
-                    }
+            Set<String> existing = userList.getRecipeIds();
+            if (existing == null || !existing.contains(recipeId)) {
+                throw new IllegalArgumentException("Recipe " + recipeId + " not found in list");
+            }
 
-                    userListRepository.removeRecipeId(internalUserId, listName, recipeId);
-                    return recipeId;
-                }));
+            userListRepository.removeRecipeId(userId, listId, recipeId);
+            return recipeId;
+        });
     }
 
-    // listName is passed as the "listId" path variable for the dynamo profile
     @Override
-    public Mono<String> deleteListForUser(final String userId, final String listName) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
-                .flatMap(user -> wrapMono(() -> {
-                    String internalUserId = user.getId().toString();
-                    boolean deleted = userListRepository.deleteByUserIdAndListName(internalUserId, listName);
-                    if (!deleted) {
-                        throw new IllegalArgumentException("List not found: " + listName);
-                    }
-                    return listName;
-                }));
+    public Mono<String> deleteListForUser(final String userId, final String listId) {
+        return wrapMono(() -> {
+            boolean deleted = userListRepository.deleteByUserIdAndListId(userId, listId);
+            if (!deleted) {
+                throw new IllegalArgumentException("List not found: " + listId);
+            }
+            return listId;
+        });
     }
 
-    // listName is passed as the "listId" path variable for the dynamo profile
     @Override
-    public Mono<List<Recipe>> getSavedRecipesFromList(final String userId, final String listName) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
-                .flatMap(user -> wrapMono(() -> {
-                    String internalUserId = user.getId().toString();
-                    DynamoUserList userList = userListRepository
-                            .findByUserIdAndListName(internalUserId, listName)
-                            .orElseThrow(() -> new IllegalArgumentException("List not found: " + listName));
+    public Mono<List<Recipe>> getSavedRecipesFromList(final String userId, final String listId) {
+        return wrapMono(() -> {
+            DynamoUserList userList = userListRepository
+                    .findByUserIdAndListId(userId, listId)
+                    .orElseThrow(() -> new IllegalArgumentException("List not found: " + listId));
 
-                    Set<String> recipeIds = userList.getRecipeIds();
-                    if (recipeIds == null || recipeIds.isEmpty()) {
-                        return Collections.<Recipe>emptyList();
-                    }
+            Set<String> recipeIds = userList.getRecipeIds();
+            if (recipeIds == null || recipeIds.isEmpty()) {
+                return Collections.<Recipe>emptyList();
+            }
 
-                    return recipeRepository.findAllById(List.copyOf(recipeIds)).stream()
-                            .map(dr -> dr.toRecipe())
-                            .toList();
-                }));
+            return recipeRepository.findAllById(List.copyOf(recipeIds)).stream()
+                    .map(dr -> dr.toRecipe())
+                    .toList();
+        });
     }
 }

@@ -6,9 +6,7 @@ import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.ColumnTransformer;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -25,39 +23,54 @@ public class Recipe {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column(nullable = false, unique = true)
+    private String url;
+
+    @Column(name = "scraper_used")
+    private String scraperUsed;
+
     @Column(nullable = false)
     private String name;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, unique = true)
-    private String url;
-
     private String author;
-
-    private Double rating; // numeric(2,1) in db
-
-    @Column(name = "num_reviews")
-    private Integer numReviews;
+    private String image;
 
     @Column(name = "prep_time_mins")
-    private Integer prepTimeMins;
+    private String prepTimeMins;
 
     @Column(name = "cook_time_mins")
-    private Integer cookTimeMins;
+    private String cookTimeMins;
 
-    private Short servings;
+    @Column(name = "total_time")
+    private String totalTime;
 
-    private List<String> instructions = new ArrayList<>();
+    private String servings;
+    private String category;
+    private String cuisine;
+    private String calories;
+
+    @Column(name = "rating_average")
+    private Float ratingAverage;
+
+    @Column(name = "rating_count")
+    private Integer ratingCount;
 
     @Column(columnDefinition = "jsonb")
     @ColumnTransformer(write = "?::jsonb")
-    private String ingredients; // store raw JSON
+    private String keywords; // stored as JSON array
 
-    @Column(columnDefinition = "jsonb")
+    @Column(name = "ingredient_groups", columnDefinition = "jsonb")
     @ColumnTransformer(write = "?::jsonb")
-    private String nutrition;   // store raw JSON
+    private String ingredientGroups; // stored as JSON
+
+    @Column(name = "instruction_groups", columnDefinition = "jsonb")
+    @ColumnTransformer(write = "?::jsonb")
+    private String instructionGroups; // stored as JSON
+
+    private String notes;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at")
@@ -66,5 +79,4 @@ public class Recipe {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_at")
     private Date updatedAt = new Date();
-
 }

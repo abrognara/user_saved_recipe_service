@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.UUID;
+
 @Service
 @Profile("!dynamo")
 public class SupabaseUserService implements UserService {
@@ -19,18 +21,12 @@ public class SupabaseUserService implements UserService {
         this.userRepository = userRepository;
     }
 
-    /**
-     * Look up a user by auth provider + external id (e.g. Firebase UID).
-     * Throws UserNotFoundException if not found.
-     */
     @Transactional(readOnly = true)
-    public Mono<User> getUserByAuthProviderAndId(final String provider, final String providerId) {
+    @Override
+    public Mono<User> getUserById(final UUID id) {
         return Mono.fromCallable(() ->
-                userRepository.findByAuthProviderAndAuthProviderId(provider, providerId)
-                .orElseThrow(() ->
-                        new UserNotFoundException("User not found for provider=" + provider + " and id=" + providerId)
-                )
+                userRepository.findById(id)
+                        .orElseThrow(() -> new UserNotFoundException("User not found: " + id))
         ).subscribeOn(Schedulers.boundedElastic());
     }
-
 }

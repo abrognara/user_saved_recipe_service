@@ -1,18 +1,16 @@
 package com.brognara.user_saved_recipe_service.service;
 
-import com.brognara.user_saved_recipe_service.dto.IngredientDto;
-import com.brognara.user_saved_recipe_service.dto.NutritionDto;
 import com.brognara.user_saved_recipe_service.dto.RecipeDto;
 import com.brognara.user_saved_recipe_service.dto.UserListDto;
 import com.brognara.user_saved_recipe_service.model.Recipe;
 import com.brognara.user_saved_recipe_service.model.UserList;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -38,6 +36,7 @@ public class DtoMappingService {
 
     private UserListDto toUserListDto(final UserList userList) {
         return UserListDto.builder()
+                .listId(userList.getId() != null ? userList.getId().toString() : null)
                 .listName(userList.getListName())
                 .createdByUser(userList.getUser().getDisplayName())
                 .creationTimestamp(userList.getCreatedAt().toInstant().toEpochMilli())
@@ -55,18 +54,25 @@ public class DtoMappingService {
         return Mono.fromCallable(() ->
                 RecipeDto.builder()
                         .id(recipe.getId())
+                        .url(recipe.getUrl())
+                        .scraperUsed(recipe.getScraperUsed())
                         .name(recipe.getName())
                         .description(recipe.getDescription())
-                        .url(recipe.getUrl())
                         .author(recipe.getAuthor())
-                        .rating(recipe.getRating())
-                        .numReviews(recipe.getNumReviews())
+                        .image(recipe.getImage())
                         .prepTimeMins(recipe.getPrepTimeMins())
                         .cookTimeMins(recipe.getCookTimeMins())
+                        .totalTime(recipe.getTotalTime())
                         .servings(recipe.getServings())
-                        .instructions(recipe.getInstructions())
-                        .ingredients(parseIngredients(recipe.getIngredients()))
-                        .nutrition(parseNutrition(recipe.getNutrition()))
+                        .category(recipe.getCategory())
+                        .cuisine(recipe.getCuisine())
+                        .calories(recipe.getCalories())
+                        .ratingAverage(recipe.getRatingAverage())
+                        .ratingCount(recipe.getRatingCount())
+                        .keywords(parseJsonList(recipe.getKeywords()))
+                        .ingredientGroups(parseIngredientGroups(recipe.getIngredientGroups()))
+                        .instructionGroups(parseInstructionGroups(recipe.getInstructionGroups()))
+                        .notes(recipe.getNotes())
                         .build()
         );
     }
@@ -74,21 +80,26 @@ public class DtoMappingService {
     public Mono<Recipe> toEntity(final RecipeDto dto) {
         return Mono.fromCallable(() -> {
             final Recipe recipe = new Recipe();
-            recipe.setId(dto.getId()); // allow updates
+            recipe.setId(dto.getId());
+            recipe.setUrl(dto.getUrl());
+            recipe.setScraperUsed(dto.getScraperUsed());
             recipe.setName(dto.getName());
             recipe.setDescription(dto.getDescription());
-            recipe.setUrl(dto.getUrl());
             recipe.setAuthor(dto.getAuthor());
-            recipe.setRating(dto.getRating());
-            recipe.setNumReviews(dto.getNumReviews());
+            recipe.setImage(dto.getImage());
             recipe.setPrepTimeMins(dto.getPrepTimeMins());
             recipe.setCookTimeMins(dto.getCookTimeMins());
+            recipe.setTotalTime(dto.getTotalTime());
             recipe.setServings(dto.getServings());
-            recipe.setInstructions(dto.getInstructions());
-
-            recipe.setIngredients(writeIngredients(dto.getIngredients()));
-            recipe.setNutrition(writeNutrition(dto.getNutrition()));
-
+            recipe.setCategory(dto.getCategory());
+            recipe.setCuisine(dto.getCuisine());
+            recipe.setCalories(dto.getCalories());
+            recipe.setRatingAverage(dto.getRatingAverage());
+            recipe.setRatingCount(dto.getRatingCount());
+            recipe.setKeywords(writeJson(dto.getKeywords()));
+            recipe.setIngredientGroups(writeJson(dto.getIngredientGroups()));
+            recipe.setInstructionGroups(writeJson(dto.getInstructionGroups()));
+            recipe.setNotes(dto.getNotes());
             recipe.setUpdatedAt(new Date());
             if (recipe.getCreatedAt() == null) {
                 recipe.setCreatedAt(new Date());
@@ -97,39 +108,39 @@ public class DtoMappingService {
         });
     }
 
-    private List<IngredientDto> parseIngredients(final String json) {
+    private List<String> parseJsonList(final String json) {
         if (json == null) return Collections.emptyList();
         try {
-            return Arrays.asList(objectMapper.readValue(json, IngredientDto[].class));
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse ingredients JSON", e);
+            throw new RuntimeException("Failed to parse JSON list", e);
         }
     }
 
-    private NutritionDto parseNutrition(final String json) {
-        if (json == null) return null;
+    private List<RecipeDto.IngredientGroup> parseIngredientGroups(final String json) {
+        if (json == null) return Collections.emptyList();
         try {
-            return objectMapper.readValue(json, NutritionDto.class);
+            return objectMapper.readValue(json, new TypeReference<List<RecipeDto.IngredientGroup>>() {});
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse nutrition JSON", e);
+            throw new RuntimeException("Failed to parse ingredient groups JSON", e);
         }
     }
 
-    private String writeIngredients(final List<IngredientDto> ingredients) {
-        if (ingredients == null) return null;
+    private List<RecipeDto.InstructionGroup> parseInstructionGroups(final String json) {
+        if (json == null) return Collections.emptyList();
         try {
-            return objectMapper.writeValueAsString(ingredients);
+            return objectMapper.readValue(json, new TypeReference<List<RecipeDto.InstructionGroup>>() {});
         } catch (Exception e) {
-            throw new RuntimeException("Failed to write ingredients JSON", e);
+            throw new RuntimeException("Failed to parse instruction groups JSON", e);
         }
     }
 
-    private String writeNutrition(final NutritionDto nutrition) {
-        if (nutrition == null) return null;
+    private String writeJson(final Object value) {
+        if (value == null) return null;
         try {
-            return objectMapper.writeValueAsString(nutrition);
+            return objectMapper.writeValueAsString(value);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to write nutrition JSON", e);
+            throw new RuntimeException("Failed to serialize to JSON", e);
         }
     }
 }

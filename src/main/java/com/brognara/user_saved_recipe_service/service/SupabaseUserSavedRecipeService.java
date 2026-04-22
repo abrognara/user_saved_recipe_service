@@ -2,7 +2,6 @@ package com.brognara.user_saved_recipe_service.service;
 
 import com.brognara.user_saved_recipe_service.dto.UserListDto;
 import com.brognara.user_saved_recipe_service.model.*;
-import com.brognara.user_saved_recipe_service.repository.RecipeRepository;
 import com.brognara.user_saved_recipe_service.repository.UserListRecipeRepository;
 import com.brognara.user_saved_recipe_service.repository.UserListRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +22,8 @@ import static com.brognara.user_saved_recipe_service.utils.PgReactiveUtils.wrapM
 @Profile("!dynamo")
 public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
 
-    private static final String FIREBASE = "firebase";
-
     private final UserListRepository userListRepository;
     private final UserListRecipeRepository userListRecipeRepository;
-    private final RecipeRepository recipeRepository;
     private final UserService userService;
     private final RecipeDeduplicationFilter recipeDeduplicationFilter;
 
@@ -35,19 +31,18 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
     public SupabaseUserSavedRecipeService(
             UserListRepository userListRepository,
             UserListRecipeRepository userListRecipeRepository,
-            RecipeRepository recipeRepository,
-            final UserService userService, final RecipeDeduplicationFilter recipeDeduplicationFilter
+            final UserService userService,
+            final RecipeDeduplicationFilter recipeDeduplicationFilter
     ) {
         this.userListRepository = userListRepository;
         this.userListRecipeRepository = userListRecipeRepository;
-        this.recipeRepository = recipeRepository;
         this.userService = userService;
         this.recipeDeduplicationFilter = recipeDeduplicationFilter;
     }
 
     @Override
     public Mono<UserList> createNewListForUser(final String userId, final UserListDto userListDto) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
+        return userService.getUserById(UUID.fromString(userId))
                 .flatMap(user -> createNewListIfNotExists(user, userListDto));
     }
 
@@ -70,21 +65,15 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
     }
 
     @Override
-    public Mono<List<UserList>> getListsForUser(String userId) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
-                .flatMap(user ->
-                        wrapMono(() ->
-                                userListRepository.findByUserId(user.getId())
-                        )
-                );
+    public Mono<List<UserList>> getListsForUser(final String userId) {
+        return userService.getUserById(UUID.fromString(userId))
+                .flatMap(user -> wrapMono(() -> userListRepository.findByUserId(user.getId())));
     }
 
-    // Load UserList + Recipe, create new UserListRecipe, save it.
-    // TODO Does this do too many db operations?
     @Override
     @Transactional
     public Mono<String> addRecipeToListForUser(final String userId, final String listId, final Recipe recipe) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
+        return userService.getUserById(UUID.fromString(userId))
                 .flatMap(user ->
                     wrapMono(() -> {
                         final UUID listIdUuid = UUID.fromString(listId);
@@ -92,7 +81,6 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
                                 .findByUserIdAndId(user.getId(), listIdUuid)
                                 .orElseThrow(() -> new IllegalArgumentException("List not found"));
 
-                        // this will have the same content as 'recipe', except with normalized url
                         final Recipe r = recipeDeduplicationFilter.saveRecipeIfNotExistsAndGet(recipe);
 
                         if (userListRecipeRepository.existsByUserList_IdAndRecipe_Id(userList.getId(), r.getId())) {
@@ -113,9 +101,8 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
     }
 
     @Override
-    public Mono<String> deleteRecipeFromListForUser(final String userId,
-                                                    final String listId, final String recipeId) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
+    public Mono<String> deleteRecipeFromListForUser(final String userId, final String listId, final String recipeId) {
+        return userService.getUserById(UUID.fromString(userId))
                 .flatMap(user ->
                     wrapMono(() -> {
                         final UUID listIdUuid = UUID.fromString(listId);
@@ -132,7 +119,7 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
 
     @Override
     public Mono<String> deleteListForUser(final String userId, final String listId) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
+        return userService.getUserById(UUID.fromString(userId))
                 .flatMap(user ->
                     wrapMono(() -> {
                         final UUID listIdUuid = UUID.fromString(listId);
@@ -147,7 +134,7 @@ public class SupabaseUserSavedRecipeService implements UserSavedRecipeService {
 
     @Override
     public Mono<List<Recipe>> getSavedRecipesFromList(final String userId, final String listId) {
-        return userService.getUserByAuthProviderAndId(FIREBASE, userId)
+        return userService.getUserById(UUID.fromString(userId))
                 .flatMap(user ->
                     wrapMono(() -> {
                         final UUID listIdUuid = UUID.fromString(listId);
