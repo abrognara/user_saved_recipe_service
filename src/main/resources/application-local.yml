@@ -1,0 +1,6 @@
+dynamo:
+  region: us-east-1
+  endpoint: http://localhost:8001
+  table:
+    recipes: Recipes
+    user-lists: UserSavedRecipes

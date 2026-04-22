@@ -1,15 +1,18 @@
 package com.brognara.user_saved_recipe_service.service;
 
-import com.brognara.user_saved_recipe_service.model.UserRecipeFolder;
-import com.brognara.user_saved_recipe_service.model.UserSavedRecipe;
+import com.brognara.user_saved_recipe_service.dto.UserListDto;
+import com.brognara.user_saved_recipe_service.dto.RecipeDto;
+import com.brognara.user_saved_recipe_service.model.Recipe;
+import com.brognara.user_saved_recipe_service.model.UserList;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.List;
 
 public interface UserSavedRecipeService {
-    Mono<String> createNewFolderForUser(String userId, UserRecipeFolder folder);
-    Mono<ConcurrentSkipListSet<UserRecipeFolder>> getFoldersForUser(String userId);
-    Mono<String> addRecipeToFolderForUser(String userId, String folderName, UserSavedRecipe recipe);
-    Mono<String> deleteRecipeFromFolderForUser(String userId, String folderName, String recipeName);
-    Mono<String> deleteFolderForUser(String userId, String folderName);
+    Mono<UserList> createNewListForUser(final String userId, final UserListDto userListDto);
+    Mono<List<UserList>> getListsForUser(String userId);
+    Mono<String> addRecipeToListForUser(String userId, String listName, Recipe recipe);
+    Mono<String> deleteRecipeFromListForUser(String userId, String listName, String recipeName);
+    Mono<String> deleteListForUser(String userId, String listName);
+    Mono<List<Recipe>> getSavedRecipesFromList(String userId, String listName);
 } 
